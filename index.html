@@ -273,11 +273,10 @@ var revealed = false;
 var score = 0;
 var answered = 0;
 var wrongCount = 0;
-var activeFilter = 'all';
 
 function init() {
   buildFilters();
-  applyFilter('all');
+  applyFilter();
 }
 
 function buildFilters() {
@@ -289,7 +288,7 @@ function buildFilters() {
   div.appendChild(shuffle);
 }
 
-function applyFilter(value) {
+function applyFilter() {
   filtered = ALL_QUESTIONS.slice();
   queue = filtered.slice();
   shuffleArray(queue);
@@ -311,14 +310,22 @@ function loadQuestion() {
   selected.clear();
   revealed = false;
   
-  var qDiv = document.getElementById('questionText');
-  qDiv.textContent = current.question;
+  document.getElementById('questionText').textContent = current.question;
   
-  var oDiv = document.getElementById('optionsDiv');
+  var oDiv = document.getElementById('optionsList');
   oDiv.innerHTML = '';
   
   var isMulti = current.correct.length > 1;
-  var correct = new Set(current.correct);
+  var hintEl = document.getElementById('multiHint');
+  var btnEl = document.getElementById('confirmBtn');
+  
+  if (isMulti) {
+    hintEl.style.display = 'block';
+    btnEl.style.display = 'block';
+  } else {
+    hintEl.style.display = 'none';
+    btnEl.style.display = 'none';
+  }
   
   current.options.forEach(function(opt) {
     var el = document.createElement('div');
@@ -340,7 +347,6 @@ function loadQuestion() {
     el.addEventListener('click', function() { handleOptionClick(el, opt.letter, isMulti); });
   });
   
-  document.getElementById('checkBtn').style.display = 'block';
   updateScore();
 }
 
@@ -359,7 +365,12 @@ function handleOptionClick(el, letter, isMulti) {
     el.classList.add('selected');
     selected.clear();
     selected.add(letter);
+    setTimeout(checkAnswer, 300);
   }
+}
+
+function confirmMulti() {
+  checkAnswer();
 }
 
 function checkAnswer() {
@@ -388,26 +399,36 @@ function checkAnswer() {
   }
   
   updateScore();
-  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('confirmBtn').style.display = 'none';
   
   setTimeout(loadQuestion, 1500);
 }
 
 function updateScore() {
-  document.getElementById('scoreVal').textContent = score;
-  document.getElementById('progressText').textContent = answered + ' / ' + filtered.length;
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('progressLabel').textContent = answered + ' / ' + filtered.length;
+  var pct = filtered.length > 0 ? (answered / filtered.length) * 100 : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
 }
 
 function showResult() {
   var total = filtered.length;
   var pct = total > 0 ? Math.round((score / total) * 100) : 0;
-  document.getElementById('finalScore').textContent = score + ' / ' + total + ' (' + pct + '%)';
+  
+  document.getElementById('resultSub').textContent = 'Вы набрали ' + score + ' из ' + total + ' баллов';
+  document.getElementById('statCorrect').textContent = score;
+  document.getElementById('statWrong').textContent = wrongCount;
+  document.getElementById('statPct').textContent = pct + '%';
+  
+  var emoji = pct >= 80 ? '🎉' : pct >= 60 ? '👍' : pct >= 40 ? '😐' : '😢';
+  document.getElementById('resultEmoji').textContent = emoji;
+  
   document.getElementById('resultOverlay').style.display = 'flex';
 }
 
 function restartQuiz() {
   document.getElementById('resultOverlay').style.display = 'none';
-  applyFilter(activeFilter);
+  applyFilter();
 }
 
 function toggleTheme() {
